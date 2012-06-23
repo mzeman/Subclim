@@ -246,11 +246,11 @@ class JavaGotoDefinition(sublime_plugin.TextCommand):
         project, file = get_context(self.view)
         pos = self.view.sel()[0]
         word = self.view.word(pos)
-        locations = self.call_eclim(project, file, word.a, word.size())
+        fullWord = self.view.substr(pos)
+        locations = self.call_eclim(project, file, word.a, word.size(), fullWord)
         locations = self.to_list(locations)
-
         #  one definition was found and it is in a java file -> go there
-        if len(locations) == 1:
+        if len(locations) >= 1:
             if locations[0]['filename'].endswith("java"):
                 self.go_to_location(locations[0])
                 return
@@ -259,15 +259,19 @@ class JavaGotoDefinition(sublime_plugin.TextCommand):
         error_msg = "Could not find definition of %s" % self.view.substr(word)
         log.error(error_msg)
 
-    def call_eclim(self, project, filename, offset, ident_len, shell=True):
+    def call_eclim(self, project, filename, offset, ident_len, fullWord, shell=True):
         eclim.update_java_src(project, filename)
 
+        # go_to_cmd = ['-command', 'java_search',
+        #                 '-n', project,
+        #                 '-f', filename,
+        #                 '-o', str(offset),
+        #                 '-e', 'utf-8',
+        #                 '-l', str(ident_len)]
+
         go_to_cmd = ['-command', 'java_search',
-                        '-n', project,
-                        '-f', filename,
-                        '-o', str(offset),
-                        '-e', 'utf-8',
-                        '-l', str(ident_len)]
+                        '-p', fullWord]
+
         out = eclim.call_eclim(go_to_cmd)
         return out
 
