@@ -39,7 +39,7 @@ def call_eclim(cmdline):
         shell = True
     elif hasattr(cmdline, '__iter__'):
         cmd = arg_seq(cmdline)
-        shell = False
+        shell = True
     else:
         raise Exception('dude.' + str(cmd) + str(type(cmd)))
     log.info('Run: %s', cmd)
