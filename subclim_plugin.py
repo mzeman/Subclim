@@ -250,10 +250,17 @@ class JavaGotoDefinition(sublime_plugin.TextCommand):
         locations = self.call_eclim(project, file, word.a, word.size(), fullWord)
         locations = self.to_list(locations)
         #  one definition was found and it is in a java file -> go there
-        if len(locations) >= 1:
+        if len(locations) == 1:
             if locations[0]['filename'].endswith("java"):
                 self.go_to_location(locations[0])
                 return
+        elif len(locations) > 1:
+            #  multiple usages -> show menu
+            self.locations = locations
+            self.view.window().show_quick_panel(
+                [l['message'] for l in self.locations],
+                self.location_selected, sublime.MONOSPACE_FONT)
+            return
 
         # we didnt return correctly, display error in statusbar
         error_msg = "Could not find definition of %s" % self.view.substr(word)
@@ -288,6 +295,9 @@ class JavaGotoDefinition(sublime_plugin.TextCommand):
         f, l, c = loc['filename'], loc['line'], loc['column']
         path = "%s:%s:%s" % (f, l, c)
         sublime.active_window().open_file(path, sublime.ENCODED_POSITION)
+
+    def location_selected(self, selected_idx):
+        self.go_to_location(self.locations[selected_idx])
 
 
 class JavaGotoUsages(JavaGotoDefinition):
@@ -413,7 +423,7 @@ class JavaCompletions(sublime_plugin.EventListener):
             sublime.set_timeout(lambda: self.queue_completions(view), 0)
             return []
         project, fn = get_context(view)
-        pos = locations[0]
+        pos = locations[0] + view.rowcol(locations[0])[0]
         proposals = self.to_proposals(c_func(project, fn, pos))
         return [(p.display, p.insert) for p in proposals]
 
